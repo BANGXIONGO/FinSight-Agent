@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InsightEngine 控制台</title>
+  <link rel="stylesheet" href="{{ url_for('insight_engine.static', filename='insight_dashboard.css') }}">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="hero glass">
+      <div>
+        <p class="eyebrow">InsightEngine</p>
+        <h1>MySQL 舆情分析工作台</h1>
+        <p class="subtitle">直接调用 DeepSearchAgent，展示实时分析过程与最终报告。</p>
+      </div>
+      <div class="source-tag">
+        <span>数据源</span>
+        <strong id="sourceLabel">MySQL</strong>
+      </div>
+    </header>
+
+    <section class="query-panel glass">
+      <label for="queryInput">分析问题</label>
+      <textarea id="queryInput" rows="4" placeholder="例如：分析近两周新能源汽车价格战在社媒平台的舆情趋势与风险点"></textarea>
+      <div class="actions">
+        <button id="startBtn" type="button">开始分析</button>
+        <p id="hintText">任务运行期间将自动轮询进度与日志。</p>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card glass">
+        <p>引擎状态</p>
+        <h3 id="engineStatus">检测中</h3>
+      </article>
+      <article class="stat-card glass">
+        <p>任务状态</p>
+        <h3 id="taskStatus">空闲</h3>
+      </article>
+      <article class="stat-card glass">
+        <p>总体进度</p>
+        <h3 id="progressText">0%</h3>
+      </article>
+      <article class="stat-card glass">
+        <p>段落进度</p>
+        <h3 id="paragraphText">0 / 0</h3>
+      </article>
+    </section>
+
+    <section class="progress-panel glass">
+      <div class="progress-top">
+        <span>执行进度</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div id="progressBar" class="progress-value"></div>
+      </div>
+      <p id="messageBar" class="message">等待任务启动</p>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel glass">
+        <div class="panel-head">
+          <h2>工作过程</h2>
+        </div>
+        <ol id="stageList" class="stage-list">
+          <li data-stage="pending">任务创建</li>
+          <li data-stage="running">结构与检索执行</li>
+          <li data-stage="completed">报告生成完成</li>
+        </ol>
+        <div id="logBox" class="log-box"></div>
+      </article>
+
+      <article class="panel glass">
+        <div class="panel-head">
+          <h2>分析报告</h2>
+          <div class="tab-actions">
+            <button class="tab-btn active" data-tab="rendered" type="button">渲染视图</button>
+            <button class="tab-btn" data-tab="markdown" type="button">Markdown</button>
+          </div>
+        </div>
+        <div id="reportRendered" class="report-view"></div>
+        <pre id="reportMarkdown" class="report-markdown hidden"></pre>
+      </article>
+    </section>
+  </main>
+
+  <script src="{{ url_for('insight_engine.static', filename='insight_dashboard.js') }}" defer></script>
+</body>
+</html>
