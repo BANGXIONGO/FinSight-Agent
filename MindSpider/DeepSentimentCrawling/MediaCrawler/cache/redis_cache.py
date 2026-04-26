@@ -9,11 +9,7 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Name    : 程序员阿江-Relakkes
-# @Time    : 2024/5/29 22:57
-# @Desc    : RedisCache实现
+
 import pickle
 import time
 from typing import Any, List

@@ -9,11 +9,6 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Time    : 2023/12/2 18:44
-# @Desc    :
-
 from httpx import RequestError
 
 

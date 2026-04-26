@@ -9,13 +9,8 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Time    : 2023/12/2 11:18
-# @Desc    : 爬虫 IP 获取实现
-# @Url     : 快代理HTTP实现，官方文档：https://www.kuaidaili.com/?ref=ldwkjqipvz6c
-import json
 from abc import ABC, abstractmethod
+import json
 from typing import List
 
 import config

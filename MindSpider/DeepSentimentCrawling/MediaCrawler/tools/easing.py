@@ -9,10 +9,6 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# copy from https://github.com/aneasystone/selenium-test/blob/master/12-slider-captcha.py
-# thanks to aneasystone for his great work
 import math
 from typing import List, Tuple
 

@@ -122,6 +122,8 @@ class DeepSearchAgent:
             DBResponse对象（可能包含情感分析结果）
         """
         logger.info(f"  → 执行数据库查询工具: {tool_name}")
+        topic_anchor = str(kwargs.pop("topic_anchor", "") or "").strip()
+        anchor_query = topic_anchor if topic_anchor else query
         
         # 对于热点内容搜索，不需要关键词优化（因为不需要query参数）
         if tool_name == "search_hot_content":
@@ -163,15 +165,20 @@ class DeepSearchAgent:
             original_query=query,
             context=f"使用{tool_name}工具进行查询"
         )
+        search_keywords = self._build_search_keywords(anchor_query, optimized_response.optimized_keywords)
+        keyword_count = max(len(search_keywords), 1)
         
         logger.info(f"  🔍 原始查询: '{query}'")
+        if topic_anchor:
+            logger.info(f"  🎯 话题锚点: '{topic_anchor}'")
         logger.info(f"  ✨ 优化后关键词: {optimized_response.optimized_keywords}")
+        logger.info(f"  🎯 实际执行关键词: {search_keywords}")
         
         # 使用优化后的关键词进行多次查询并整合结果
         all_results = []
         total_count = 0
         
-        for keyword in optimized_response.optimized_keywords:
+        for keyword in search_keywords:
             logger.info(f"    查询关键词: '{keyword}'")
             
             try:
@@ -189,7 +196,7 @@ class DeepSearchAgent:
                     response = self.search_agency.search_topic_by_date(topic=keyword, start_date=start_date, end_date=end_date, limit_per_table=limit_per_table)
                 elif tool_name == "get_comments_for_topic":
                     # 使用配置文件中的默认值，按关键词数量分配，但保证最小值
-                    limit = self.config.DEFAULT_GET_COMMENTS_FOR_TOPIC_LIMIT // len(optimized_response.optimized_keywords)
+                    limit = self.config.DEFAULT_GET_COMMENTS_FOR_TOPIC_LIMIT // keyword_count
                     limit = max(limit, 50)
                     response = self.search_agency.get_comments_for_topic(topic=keyword, limit=limit)
                 elif tool_name == "search_topic_on_platform":
@@ -197,7 +204,7 @@ class DeepSearchAgent:
                     start_date = kwargs.get("start_date")
                     end_date = kwargs.get("end_date")
                     # 使用配置文件中的默认值，按关键词数量分配，但保证最小值
-                    limit = self.config.DEFAULT_SEARCH_TOPIC_ON_PLATFORM_LIMIT // len(optimized_response.optimized_keywords)
+                    limit = self.config.DEFAULT_SEARCH_TOPIC_ON_PLATFORM_LIMIT // keyword_count
                     limit = max(limit, 30)
                     if not platform:
                         raise ValueError("search_topic_on_platform工具需要platform参数")
@@ -220,26 +227,29 @@ class DeepSearchAgent:
         
         # 去重和整合结果
         unique_results = self._deduplicate_results(all_results)
-        logger.info(f"  总计找到 {total_count} 条结果，去重后 {len(unique_results)} 条")
+        filtered_results = self._filter_results_by_query(unique_results, anchor_query)
+        logger.info(f"  总计找到 {total_count} 条结果，去重后 {len(unique_results)} 条，相关性过滤后 {len(filtered_results)} 条")
         
         # 构建整合后的响应
         integrated_response = DBResponse(
             tool_name=f"{tool_name}_optimized",
             parameters={
                 "original_query": query,
+                "topic_anchor": topic_anchor,
                 "optimized_keywords": optimized_response.optimized_keywords,
+                "executed_keywords": search_keywords,
                 "optimization_reasoning": optimized_response.reasoning,
                 **kwargs
             },
-            results=unique_results,
-            results_count=len(unique_results)
+            results=filtered_results,
+            results_count=len(filtered_results)
         )
         
         # 检查是否需要进行情感分析
         enable_sentiment = kwargs.get("enable_sentiment", True)
-        if enable_sentiment and unique_results and len(unique_results) > 0:
+        if enable_sentiment and filtered_results and len(filtered_results) > 0:
             logger.info(f"  🎭 开始对搜索结果进行情感分析...")
-            sentiment_analysis = self._perform_sentiment_analysis(unique_results)
+            sentiment_analysis = self._perform_sentiment_analysis(filtered_results)
             if sentiment_analysis:
                 # 将情感分析结果添加到响应的parameters中
                 integrated_response.parameters["sentiment_analysis"] = sentiment_analysis
@@ -262,6 +272,153 @@ class DeepSearchAgent:
                 unique_results.append(result)
         
         return unique_results
+
+    def _extract_query_terms(self, text: str) -> List[str]:
+        """提取查询关键词，兼容中英文与常见标点。"""
+        if not text:
+            return []
+
+        terms = [text.strip()]
+        parts = re.split(r"[\s,，。！？；;、:/|\\\-\(\)\[\]\{\}]+", text)
+        for part in parts:
+            part = part.strip()
+            if len(part) >= 2:
+                terms.append(part)
+
+        # 中文场景下补充2-4字切片，提升匹配召回（避免整句匹配过严）
+        cjk_text = re.sub(r"[^\u4e00-\u9fff]", "", text)
+        if len(cjk_text) >= 4:
+            for n in (2, 3, 4):
+                for i in range(0, len(cjk_text) - n + 1):
+                    terms.append(cjk_text[i:i + n])
+
+        # 去重并保序
+        seen = set()
+        deduped = []
+        for term in terms:
+            key = term.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(term)
+        return deduped
+
+    def _is_keyword_related_to_query(self, keyword: str, query: str) -> bool:
+        """判断扩展关键词是否与原始查询足够相关。"""
+        if not keyword:
+            return False
+        if not query:
+            return True
+
+        kw = keyword.strip().lower()
+        q = query.strip().lower()
+        if not kw:
+            return False
+        if kw in q or q in kw:
+            return True
+
+        query_terms = self._extract_query_terms(query)
+        for term in query_terms:
+            term_l = term.lower()
+            if term_l and (term_l in kw or kw in term_l):
+                return True
+
+        return False
+
+    def _build_search_keywords(self, query: str, optimized_keywords: List[str]) -> List[str]:
+        """
+        构造最终执行关键词：
+        1) 原始query优先
+        2) 仅保留与query强相关的扩展词
+        3) 控制关键词数量，降低噪音召回
+        """
+        candidates: List[str] = []
+        if query and query.strip():
+            candidates.append(query.strip())
+
+        for kw in optimized_keywords or []:
+            if isinstance(kw, str) and kw.strip():
+                candidates.append(kw.strip())
+
+        # 去重并保序
+        seen = set()
+        deduped = []
+        for kw in candidates:
+            key = kw.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(kw)
+
+        related = [kw for kw in deduped if self._is_keyword_related_to_query(kw, query)]
+        if not related and query and query.strip():
+            related = [query.strip()]
+        elif not related:
+            related = deduped[:1] if deduped else ["热门话题"]
+
+        max_keywords = max(1, int(getattr(self.config, "MAX_KEYWORDS_PER_QUERY", 3)))
+        return related[:max_keywords]
+
+    def _filter_results_by_query(self, results: List, query: str) -> List:
+        """按原始查询做一次轻量相关性过滤，避免报告跑题。"""
+        if not results or not query:
+            return results
+
+        query_terms = self._extract_query_terms(query)
+        if not query_terms:
+            return results
+
+        scored = []
+        for result in results:
+            haystack = f"{getattr(result, 'title_or_content', '')} {getattr(result, 'source_keyword', '')}".lower()
+            score = sum(1 for term in query_terms if term.lower() in haystack)
+            if score > 0:
+                hotness = float(getattr(result, "hotness_score", 0.0) or 0.0)
+                scored.append((score, hotness, result))
+
+        # 若无法匹配到相关项，保留原始结果，避免误杀
+        if not scored:
+            logger.warning("  相关性过滤未命中有效结果，判定为无相关数据")
+            return []
+
+        scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        return [item[2] for item in scored]
+
+    def _is_text_related_to_query(self, text: str, query: str) -> bool:
+        """判断文本是否与查询主题相关，用于报告结果兜底判断。"""
+        if not text or not query:
+            return True
+        preview = text[:3000].lower()
+        query_terms = self._extract_query_terms(query)
+        if not query_terms:
+            return True
+        return any(term.lower() in preview for term in query_terms)
+
+    def _build_no_data_summary(self, paragraph_title: str, search_query: str) -> str:
+        """构造无数据段落总结，避免模型在空数据时幻觉生成。"""
+        topic = self.state.query or search_query or "当前话题"
+        return (
+            f"本段未检索到与“{topic}”直接相关的数据库原始记录。\n\n"
+            f"- 段落：{paragraph_title}\n"
+            f"- 本轮检索词：{search_query}\n"
+            "- 结论：当前数据库样本不足，无法给出可靠舆情结论。\n"
+            "- 建议：请补充该话题的抓取数据或更换更具体的话题词后重试。"
+        )
+
+    def _build_no_data_report(self) -> str:
+        """构造全局无数据报告。"""
+        topic = self.state.query or "指定话题"
+        return (
+            f"# 关于“{topic}”的报告\n\n"
+            "## 数据可用性说明\n"
+            "本次任务未在数据库中检索到与该话题直接相关的有效记录，系统已停止生成推测性结论。\n\n"
+            "## 结果\n"
+            "- 结论：无法基于当前数据库数据产出有效舆情报告。\n"
+            "- 原因：相关样本不足或关键词与库内数据不匹配。\n"
+            "- 建议：补充数据抓取后重试，或使用更具体的检索话题。"
+        )
+
+    def _get_total_search_records(self) -> int:
+        """统计本次任务累计检索记录数。"""
+        return sum(len(p.research.search_history) for p in self.state.paragraphs)
     
     def _perform_sentiment_analysis(self, results: List) -> Optional[Dict[str, Any]]:
         """
@@ -385,6 +542,9 @@ class DeepSearchAgent:
         logger.info(f"{'='*60}")
         
         try:
+            # 每次研究任务开始前重置状态，避免跨任务污染导致报告重复/串题
+            self.state = State()
+
             # Step 1: 生成报告结构
             self._generate_report_structure(query)
             
@@ -515,6 +675,9 @@ class DeepSearchAgent:
             else:  # search_topic_on_platform
                 limit = self.config.DEFAULT_SEARCH_TOPIC_ON_PLATFORM_LIMIT
             search_kwargs["limit"] = limit
+
+        # 强制绑定前端原始话题，避免段落级搜索词跑偏
+        search_kwargs["topic_anchor"] = self.state.query
         
         search_response = self.execute_search_tool(search_tool, search_query, **search_kwargs)
         
@@ -551,6 +714,12 @@ class DeepSearchAgent:
         
         # 更新状态中的搜索历史
         paragraph.research.add_search_results(search_query, search_results)
+
+        if not search_results:
+            logger.info("  - 无相关数据，写入无数据总结并跳过LLM总结")
+            paragraph.research.latest_summary = self._build_no_data_summary(paragraph.title, search_query)
+            self.state.update_timestamp()
+            return
         
         # 生成初始总结
         logger.info("  - 生成初始总结...")
@@ -648,6 +817,9 @@ class DeepSearchAgent:
                 else:  # search_topic_on_platform
                     limit = self.config.DEFAULT_SEARCH_TOPIC_ON_PLATFORM_LIMIT
                 search_kwargs["limit"] = limit
+
+            # 强制绑定前端原始话题，避免反思轮次跑偏
+            search_kwargs["topic_anchor"] = self.state.query
             
             search_response = self.execute_search_tool(search_tool, search_query, **search_kwargs)
             
@@ -684,6 +856,10 @@ class DeepSearchAgent:
             
             # 更新搜索历史
             paragraph.research.add_search_results(search_query, search_results)
+
+            if not search_results:
+                logger.info("    本轮无相关数据，跳过反思总结更新")
+                continue
             
             # 生成反思总结
             reflection_summary_input = {
@@ -704,9 +880,13 @@ class DeepSearchAgent:
             logger.info(f"    反思 {reflection_i + 1} 完成")
     
     def _generate_final_report(self) -> str:
-        """生成最终报告"""
-        logger.info(f"\n[步骤 3] 生成最终报告...")
-        
+        """生成最终报告（严格按 prompts.py 的格式要求）"""
+        logger.info("\n[步骤 3] 生成最终报告...")
+
+        total_records = self._get_total_search_records()
+        if total_records == 0:
+            logger.warning("未检索到有效记录，仍通过LLM格式化节点生成报告，不启用兜底模板")
+
         # 准备报告数据
         report_data = []
         for paragraph in self.state.paragraphs:
@@ -714,20 +894,14 @@ class DeepSearchAgent:
                 "title": paragraph.title,
                 "paragraph_latest_state": paragraph.research.latest_summary
             })
-        
-        # 格式化报告
-        try:
-            final_report = self.report_formatting_node.run(report_data)
-        except Exception as e:
-            logger.exception(f"LLM格式化失败，使用备用方法: {str(e)}")
-            final_report = self.report_formatting_node.format_report_manually(
-                report_data, self.state.report_title
-            )
-        
+
+        # 严格使用 prompts.py 的格式指令，不做手动兜底
+        final_report = self.report_formatting_node.run(report_data)
+
         # 更新状态
         self.state.final_report = final_report
         self.state.mark_completed()
-        
+
         logger.info("最终报告生成完成")
         return final_report
     
@@ -779,5 +953,5 @@ def create_agent(config_file: Optional[str] = None) -> DeepSearchAgent:
     Returns:
         DeepSearchAgent实例
     """
-    config = Settings() # 以空配置初始化，而从从环境变量初始化
+    config = Settings()
     return DeepSearchAgent(config)

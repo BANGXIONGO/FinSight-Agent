@@ -30,12 +30,12 @@ class Settings(BaseSettings):
     PORT: int = Field(5000, description="Flask服务器端口号，默认5000")
 
     # ====================== 数据库配置 ======================
-    DB_DIALECT: str = Field("postgresql", description="数据库类型，可选 mysql 或 postgresql；请与其他连接信息同时配置")
-    DB_HOST: str = Field("your_db_host", description="数据库主机，例如localhost 或 127.0.0.1")
+    DB_DIALECT: str = Field("mysql", description="数据库类型，可选 mysql 或 postgresql；请与其他连接信息同时配置")
+    DB_HOST: str = Field("localhost", description="数据库主机，例如localhost 或 127.0.0.1")
     DB_PORT: int = Field(3306, description="数据库端口号，默认为3306")
-    DB_USER: str = Field("your_db_user", description="数据库用户名")
-    DB_PASSWORD: str = Field("your_db_password", description="数据库密码")
-    DB_NAME: str = Field("your_db_name", description="数据库名称")
+    DB_USER: str = Field("root", description="数据库用户名")
+    DB_PASSWORD: str = Field("root", description="数据库密码")
+    DB_NAME: str = Field("fsa", description="数据库名称")
     DB_CHARSET: str = Field("utf8mb4", description="数据库字符集，推荐utf8mb4，兼容emoji")
     
     # ======================= LLM 相关 =======================
@@ -46,20 +46,15 @@ class Settings(BaseSettings):
     # INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://api.moonshot.cn/v1", description="Insight Agent LLM BaseUrl，可根据厂商自定义")
     # INSIGHT_ENGINE_MODEL_NAME: str = Field("kimi-k2-0711-preview", description="Insight Agent LLM 模型名称，例如 kimi-k2-0711-preview")
     
-    INSIGHT_ENGINE_API_KEY: Optional[str] = Field("2ef1efed81bc46da842bbf3c25713233.JmKaCGaSK580dbpA", description="Insight Agent??? kimi-k2????????https://platform.moonshot.cn/?API ?????? LLM??????????????????????? KEY?BASE_URL ? MODEL_NAME?")
-    INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://open.bigmodel.cn/api/paas/v4", description="Insight Agent LLM BaseUrl?????????")
-    INSIGHT_ENGINE_MODEL_NAME: str = Field("glm-4-flashx-250414", description="Insight Agent LLM ??????? kimi-k2-0711-preview")
+    INSIGHT_ENGINE_API_KEY: Optional[str] = Field("2ef1efed81bc46da842bbf3c25713233.JmKaCGaSK580dbpA")
+    INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://open.bigmodel.cn/api/paas/v4",)
+    INSIGHT_ENGINE_MODEL_NAME: str = Field("glm-4-flashx-250414", )
 
 
     # MindSpider Agent（推荐Deepseek，官方申请地址：https://platform.deepseek.com/）
     MINDSPIDER_API_KEY: Optional[str] = Field("2ef1efed81bc46da842bbf3c25713233.JmKaCGaSK580dbpA", description="Insight Agent??? kimi-k2????????https://platform.moonshot.cn/?API ?????? LLM??????????????????????? KEY?BASE_URL ? MODEL_NAME?")
     MINDSPIDER_BASE_URL: Optional[str] = Field("https://open.bigmodel.cn/api/paas/v4", description="Insight Agent LLM BaseUrl?????????")
     MINDSPIDER_MODEL_NAME: Optional[str] = Field("glm-4-flashx-250414", description="Insight Agent LLM ??????? kimi-k2-0711-preview")
-    
-    # Forum Host（Qwen3最新模型，这里我使用了硅基流动这个平台，申请地址：https://cloud.siliconflow.cn/）
-    FORUM_HOST_API_KEY: Optional[str] = Field("2ef1efed81bc46da842bbf3c25713233.JmKaCGaSK580dbpA", description="Insight Agent??? kimi-k2????????https://platform.moonshot.cn/?API ?????? LLM??????????????????????? KEY?BASE_URL ? MODEL_NAME?")
-    FORUM_HOST_BASE_URL: Optional[str] = Field("https://open.bigmodel.cn/api/paas/v4", description="Insight Agent LLM BaseUrl?????????")
-    FORUM_HOST_MODEL_NAME: Optional[str] = Field("glm-4-flashx-250414", description="Insight Agent LLM ??????? kimi-k2-0711-preview")
     
     # SQL keyword Optimizer（小参数Qwen3模型，这里我使用了硅基流动这个平台，申请地址：https://cloud.siliconflow.cn/）
     KEYWORD_OPTIMIZER_API_KEY: Optional[str] = Field("2ef1efed81bc46da842bbf3c25713233.JmKaCGaSK580dbpA", description="Insight Agent??? kimi-k2????????https://platform.moonshot.cn/?API ?????? LLM??????????????????????? KEY?BASE_URL ? MODEL_NAME?")

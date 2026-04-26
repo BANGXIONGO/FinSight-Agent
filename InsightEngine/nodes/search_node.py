@@ -42,7 +42,7 @@ class FirstSearchNode(BaseNode):
             return "title" in input_data and "content" in input_data
         return False
     
-    def run(self, input_data: Any, **kwargs) -> Dict[str, str]:
+    def run(self, input_data: Any, **kwargs) -> Dict[str, Any]:
         """
         调用LLM生成搜索查询和理由
         
@@ -69,7 +69,7 @@ class FirstSearchNode(BaseNode):
             response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_FIRST_SEARCH, message)
             
             # 处理响应
-            processed_response = self.process_output(response)
+            processed_response = self.process_output(response, input_data)
             
             logger.info(f"生成搜索查询: {processed_response.get('search_query', 'N/A')}")
             return processed_response
@@ -78,7 +78,7 @@ class FirstSearchNode(BaseNode):
             logger.exception(f"生成首次搜索查询失败: {str(e)}")
             raise e
     
-    def process_output(self, output: str) -> Dict[str, str]:
+    def process_output(self, output: str, input_data: Any = None) -> Dict[str, Any]:
         """
         处理LLM输出，提取搜索查询和推理
         
@@ -115,10 +115,17 @@ class FirstSearchNode(BaseNode):
                         except JSONDecodeError:
                             logger.error("JSON修复失败")
                             # 返回默认查询
-                            return self._get_default_search_query()
+                            return self._get_default_search_query(input_data)
                     else:
                         logger.error("无法修复JSON，使用默认查询")
-                        return self._get_default_search_query()
+                        return self._get_default_search_query(input_data)
+            
+            # 兼容解析后为列表的情况（部分修复逻辑会返回数组）
+            if isinstance(result, list):
+                if result and isinstance(result[0], dict):
+                    result = result[0]
+                else:
+                    return self._get_default_search_query(input_data)
             
             # 验证和清理结果
             search_query = result.get("search_query", "")
@@ -126,28 +133,64 @@ class FirstSearchNode(BaseNode):
             
             if not search_query:
                 logger.warning("未找到搜索查询，使用默认查询")
-                return self._get_default_search_query()
-            
-            return {
+                return self._get_default_search_query(input_data)
+
+            parsed_output: Dict[str, Any] = {
                 "search_query": search_query,
                 "reasoning": reasoning
             }
+
+            # 保留工具与参数，避免上游总是回退到默认工具
+            optional_fields = [
+                "search_tool",
+                "start_date",
+                "end_date",
+                "platform",
+                "time_period",
+                "enable_sentiment",
+                "texts",
+            ]
+            for field in optional_fields:
+                value = result.get(field)
+                if value not in (None, ""):
+                    parsed_output[field] = value
+
+            return parsed_output
             
         except Exception as e:
             self.log_error(f"处理输出失败: {str(e)}")
             # 返回默认查询
-            return self._get_default_search_query()
+            return self._get_default_search_query(input_data)
     
-    def _get_default_search_query(self) -> Dict[str, str]:
+    def _extract_topic_hint(self, input_data: Any) -> str:
+        """从输入中提取一个可用的话题提示，避免固定兜底查询。"""
+        if isinstance(input_data, str):
+            try:
+                input_data = json.loads(input_data)
+            except JSONDecodeError:
+                input_data = {"title": input_data}
+
+        if isinstance(input_data, dict):
+            title = str(input_data.get("title", "")).strip()
+            content = str(input_data.get("content", "")).strip()
+            hint = title or content
+            return hint[:32] if hint else ""
+
+        return ""
+
+    def _get_default_search_query(self, input_data: Any = None) -> Dict[str, Any]:
         """
         获取默认搜索查询
         
         Returns:
             默认的搜索查询字典
         """
+        topic_hint = self._extract_topic_hint(input_data)
+        fallback_query = topic_hint if topic_hint else "相关主题研究"
         return {
-            "search_query": "相关主题研究",
-            "reasoning": "由于解析失败，使用默认搜索查询"
+            "search_query": fallback_query,
+            "search_tool": "search_topic_globally",
+            "reasoning": "由于解析失败，使用段落标题/内容作为兜底查询"
         }
 
 
@@ -177,7 +220,7 @@ class ReflectionNode(BaseNode):
             return all(field in input_data for field in required_fields)
         return False
     
-    def run(self, input_data: Any, **kwargs) -> Dict[str, str]:
+    def run(self, input_data: Any, **kwargs) -> Dict[str, Any]:
         """
         调用LLM反思并生成搜索查询
         
@@ -204,7 +247,7 @@ class ReflectionNode(BaseNode):
             response = self.llm_client.stream_invoke_to_string(SYSTEM_PROMPT_REFLECTION, message)
             
             # 处理响应
-            processed_response = self.process_output(response)
+            processed_response = self.process_output(response, input_data)
             
             logger.info(f"反思生成搜索查询: {processed_response.get('search_query', 'N/A')}")
             return processed_response
@@ -213,7 +256,7 @@ class ReflectionNode(BaseNode):
             logger.exception(f"反思生成搜索查询失败: {str(e)}")
             raise e
     
-    def process_output(self, output: str) -> Dict[str, str]:
+    def process_output(self, output: str, input_data: Any = None) -> Dict[str, Any]:
         """
         处理LLM输出，提取搜索查询和推理
         
@@ -250,10 +293,17 @@ class ReflectionNode(BaseNode):
                         except JSONDecodeError:
                             logger.error("JSON修复失败")
                             # 返回默认查询
-                            return self._get_default_reflection_query()
+                            return self._get_default_reflection_query(input_data)
                     else:
                         logger.error("无法修复JSON，使用默认查询")
-                        return self._get_default_reflection_query()
+                        return self._get_default_reflection_query(input_data)
+            
+            # 兼容解析后为列表的情况（部分修复逻辑会返回数组）
+            if isinstance(result, list):
+                if result and isinstance(result[0], dict):
+                    result = result[0]
+                else:
+                    return self._get_default_reflection_query(input_data)
             
             # 验证和清理结果
             search_query = result.get("search_query", "")
@@ -261,26 +311,62 @@ class ReflectionNode(BaseNode):
             
             if not search_query:
                 logger.warning("未找到搜索查询，使用默认查询")
-                return self._get_default_reflection_query()
-            
-            return {
+                return self._get_default_reflection_query(input_data)
+
+            parsed_output: Dict[str, Any] = {
                 "search_query": search_query,
                 "reasoning": reasoning
             }
+
+            optional_fields = [
+                "search_tool",
+                "start_date",
+                "end_date",
+                "platform",
+                "time_period",
+                "enable_sentiment",
+                "texts",
+            ]
+            for field in optional_fields:
+                value = result.get(field)
+                if value not in (None, ""):
+                    parsed_output[field] = value
+
+            return parsed_output
             
         except Exception as e:
             logger.exception(f"处理输出失败: {str(e)}")
             # 返回默认查询
-            return self._get_default_reflection_query()
+            return self._get_default_reflection_query(input_data)
     
-    def _get_default_reflection_query(self) -> Dict[str, str]:
+    def _extract_topic_hint(self, input_data: Any) -> str:
+        """从反思输入中提取话题提示，避免固定兜底查询。"""
+        if isinstance(input_data, str):
+            try:
+                input_data = json.loads(input_data)
+            except JSONDecodeError:
+                input_data = {"title": input_data}
+
+        if isinstance(input_data, dict):
+            title = str(input_data.get("title", "")).strip()
+            content = str(input_data.get("content", "")).strip()
+            latest = str(input_data.get("paragraph_latest_state", "")).strip()
+            hint = title or content or latest
+            return hint[:32] if hint else ""
+
+        return ""
+
+    def _get_default_reflection_query(self, input_data: Any = None) -> Dict[str, Any]:
         """
         获取默认反思搜索查询
         
         Returns:
             默认的反思搜索查询字典
         """
+        topic_hint = self._extract_topic_hint(input_data)
+        fallback_query = f"{topic_hint} 补充信息" if topic_hint else "深度研究补充信息"
         return {
-            "search_query": "深度研究补充信息",
-            "reasoning": "由于解析失败，使用默认反思搜索查询"
+            "search_query": fallback_query,
+            "search_tool": "search_topic_globally",
+            "reasoning": "由于解析失败，使用段落上下文作为兜底查询"
         }

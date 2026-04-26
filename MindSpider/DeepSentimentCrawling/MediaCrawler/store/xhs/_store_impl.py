@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Author  : persist1@126.com
-# @Time    : 2025/9/5 19:34
-# @Desc    : 小红书存储实现类
+
 import json
 import os
 from datetime import datetime

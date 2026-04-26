@@ -9,10 +9,7 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Time    : 2023/12/2 12:53
-# @Desc    : 爬虫相关的工具函数
+
 
 import base64
 import json

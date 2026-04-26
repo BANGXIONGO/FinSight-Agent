@@ -22,7 +22,15 @@ utils_dir = os.path.join(root_dir, 'utils')
 if utils_dir not in sys.path:
     sys.path.append(utils_dir)
 
-from retry_helper import with_graceful_retry, SEARCH_API_RETRY_CONFIG
+try:
+    from retry_helper import with_graceful_retry, SEARCH_API_RETRY_CONFIG
+except ImportError:
+    def with_graceful_retry(config=None, default_return=None):
+        def decorator(func):
+            return func
+        return decorator
+
+    SEARCH_API_RETRY_CONFIG = None
 
 @dataclass
 class KeywordOptimizationResponse:

@@ -9,10 +9,7 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
 
 
-# -*- coding: utf-8 -*-
-# @Author  : persist1@126.com
-# @Time    : 2025/9/5 19:34
-# @Desc    : 知乎存储实现类
+
 import asyncio
 import csv
 import json

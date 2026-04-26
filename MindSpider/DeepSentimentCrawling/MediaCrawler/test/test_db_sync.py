@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Author  : persist-1<persist1@126.com>
-# @Time    : 2025/9/8 00:02
-# @Desc    : 用于将orm映射模型（database/models.py）与两种数据库实际结构进行对比，并进行更新操作（连接数据库->结构比对->差异报告->交互式同步）
-# @Tips    : 该脚本需要安装依赖'pymysql==1.1.0'
+
 
 import os
 import sys

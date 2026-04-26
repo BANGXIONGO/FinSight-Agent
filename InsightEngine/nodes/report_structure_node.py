@@ -154,14 +154,19 @@ class ReportStructureNode(StateMutationNode):
             默认的报告结构列表
         """
         logger.info("生成默认报告结构")
+        query_text = (self.query or "").strip() or "该主题"
         return [
             {
-                "title": "研究概述",
-                "content": "对查询主题进行总体概述和分析"
+                "title": f"{query_text}：背景与核心问题",
+                "content": f"梳理“{query_text}”的定义、背景、关键参与方与当前讨论焦点，明确本次研究要回答的核心问题。"
             },
             {
-                "title": "深度分析",
-                "content": "深入分析查询主题的各个方面"
+                "title": f"{query_text}：数据证据与观点分布",
+                "content": f"基于检索结果分析“{query_text}”的主要观点、情绪分布、平台差异与时间变化，并给出证据链。"
+            },
+            {
+                "title": f"{query_text}：影响评估与行动建议",
+                "content": f"评估“{query_text}”对业务/行业/资产的潜在影响，输出风险等级、置信度与可执行的后续行动建议。"
             }
         ]
     

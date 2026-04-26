@@ -1,16 +1,8 @@
-# 声明：本代码仅供学习和研究目的使用。使用者应遵守以下原则：
-# 1. 不得用于任何商业用途。
-# 2. 使用时应遵守目标平台的使用条款和robots.txt规则。
-# 3. 不得进行大规模爬取或对平台造成运营干扰。
-# 4. 应合理控制请求频率，避免给目标平台带来不必要的负担。
-# 5. 不得用于任何非法或不当的用途。
-#
-# 详细许可条款请参阅项目根目录下的LICENSE文件。
-# 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
+
 
 # 基础配置
-PLATFORM = "bili"  # 平台，xhs | dy | ks | bili | wb | tieba | zhihu
-KEYWORDS = "电影鬼灭之刃,亲属想侵吞3姐妹亡父赔偿款,网警斩断侵害未成年人网络黑色产业链,2007年后出生的人不能在马尔代夫吸烟,沈月,是公主也是自己的骑士,以军虐囚视频,唐朝诡事录,广州地铁回应APP乘车码频繁弹窗广告,全红婵的减肥计划精确到克"  # 关键词搜索配置，以英文逗号分隔
+PLATFORM = "wb"  # 平台，xhs | dy | ks | bili | wb | tieba | zhihu
+KEYWORDS = "存储板块,新能源汽车,宁德时代,比亚迪,美伊战争,美国降息预期,A股走势"  # 关键词搜索配置，以英文逗号分隔
 LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
 COOKIES = ""
 CRAWLER_TYPE = "search"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
@@ -61,7 +53,7 @@ BROWSER_LAUNCH_TIMEOUT = 30
 AUTO_CLOSE_BROWSER = True
 
 # 数据保存类型选项配置,支持五种类型：csv、db、json、sqlite、postgresql, 最好保存到DB，有排重的功能。
-SAVE_DATA_OPTION = "postgresql"  # csv or db or json or sqlite or postgresql
+SAVE_DATA_OPTION = "db"  # csv or db or json or sqlite or postgresql
 
 # 用户浏览器缓存的浏览器文件配置
 USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
@@ -70,7 +62,7 @@ USER_DATA_DIR = "%s_user_data_dir"  # %s will be replaced by platform name
 START_PAGE = 1
 
 # 爬取视频/帖子的数量控制
-CRAWLER_MAX_NOTES_COUNT = 5
+CRAWLER_MAX_NOTES_COUNT = 50
 
 # 并发爬虫数量控制
 MAX_CONCURRENCY_NUM = 1

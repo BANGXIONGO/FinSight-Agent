@@ -9,10 +9,7 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Time    : 2024/4/5 10:18
-# @Desc    : 基础类型
+
 from enum import Enum
 from typing import Optional
 

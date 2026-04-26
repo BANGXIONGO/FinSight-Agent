@@ -98,7 +98,14 @@ async def update_zhihu_content_comment(comment_item: ZhihuComment):
     """
     local_db_item = comment_item.model_dump()
     local_db_item.update({"last_modify_ts": utils.get_current_timestamp()})
-    utils.logger.info(f"[store.zhihu.update_zhihu_note_comment] zhihu content comment:{local_db_item}")
+    # 避免打印整条评论对象导致日志刷屏
+    utils.logger.info(
+        "[store.zhihu.update_zhihu_note_comment] "
+        f"comment_id={local_db_item.get('comment_id')}, "
+        f"content_id={local_db_item.get('content_id')}, "
+        f"user={local_db_item.get('user_nickname')}, "
+        f"content={str(local_db_item.get('content', ''))[:40]}"
+    )
     await ZhihuStoreFactory.create_store().store_comment(local_db_item)
 
 

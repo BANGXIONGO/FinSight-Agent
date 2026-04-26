@@ -54,6 +54,22 @@ class LLMClient:
             client_kwargs["base_url"] = base_url
         self.client = OpenAI(**client_kwargs)
 
+    @staticmethod
+    def _raise_friendly_llm_error(exc: Exception) -> None:
+        """
+        将常见供应商错误转换为可读性更高的异常信息。
+        """
+        msg = str(exc)
+        if (
+            "429" in msg
+            and ("1113" in msg or "余额不足" in msg or "无可用资源包" in msg or "insufficient" in msg.lower())
+        ):
+            raise RuntimeError(
+                "LLM 调用失败：当前 API Key 余额不足或无可用资源包。"
+                "请充值对应平台账号，或更换可用的 `INSIGHT_ENGINE_API_KEY` / `INSIGHT_ENGINE_BASE_URL` / `INSIGHT_ENGINE_MODEL_NAME`。"
+            ) from exc
+        raise exc
+
     @with_retry(LLM_RETRY_CONFIG)
     def invoke(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
         current_time = datetime.now().strftime("%Y年%m月%d日%H时%M分")
@@ -72,12 +88,15 @@ class LLMClient:
 
         timeout = kwargs.pop("timeout", self.timeout)
 
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            timeout=timeout,
-            **extra_params,
-        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                timeout=timeout,
+                **extra_params,
+            )
+        except Exception as e:
+            self._raise_friendly_llm_error(e)
 
         if response.choices and response.choices[0].message:
             return self.validate_response(response.choices[0].message.content)
@@ -128,7 +147,7 @@ class LLMClient:
                         yield delta.content
         except Exception as e:
             logger.error(f"流式请求失败: {str(e)}")
-            raise e
+            self._raise_friendly_llm_error(e)
     
     @with_retry(LLM_RETRY_CONFIG)
     def stream_invoke_to_string(self, system_prompt: str, user_prompt: str, **kwargs) -> str:

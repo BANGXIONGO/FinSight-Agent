@@ -8,10 +8,6 @@
 # 详细许可条款请参阅项目根目录下的LICENSE文件。
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Time    : 2024/4/5 09:32
-# @Desc    : 已废弃！！！！！倒闭了！！！极速HTTP 代理IP实现. 请使用快代理实现（proxy/providers/kuaidl_proxy.py）
 import os
 from typing import Dict, List
 from urllib.parse import urlencode

@@ -9,11 +9,6 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Name    : 程序员阿江-Relakkes
-# @Time    : 2024/6/10 02:24
-# @Desc    : 获取 a_bogus 参数, 学习交流使用，请勿用作商业用途，侵权联系作者删除
 
 import random
 import re

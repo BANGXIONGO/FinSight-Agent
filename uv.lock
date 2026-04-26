@@ -705,6 +705,7 @@ dependencies = [
     { name = "redis" },
     { name = "regex" },
     { name = "requests" },
+    { name = "retry-helper" },
     { name = "scikit-learn" },
     { name = "sqlalchemy" },
     { name = "streamlit" },
@@ -760,6 +761,7 @@ requires-dist = [
     { name = "redis", specifier = ">=4.6.0" },
     { name = "regex", specifier = ">=2023.8.8" },
     { name = "requests", specifier = "==2.31.0" },
+    { name = "retry-helper", specifier = ">=0.0.4" },
     { name = "scikit-learn", specifier = ">=1.3.0" },
     { name = "sqlalchemy", specifier = "==2.0.35" },
     { name = "streamlit", specifier = "==1.28.1" },
@@ -2803,6 +2805,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/9d/be/10918a2eac4ae9f02
 wheels = [
     { url = "https://files.pythonhosted.org/packages/70/8e/0e2d847013cb52cd35b38c009bb167a1a26b2ce6cd6965bf26b47bc0bf44/requests-2.31.0-py3-none-any.whl", hash = "sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f", size = 62574, upload-time = "2023-05-22T15:12:42.313Z" },
 ]
+
+[[package]]
+name = "retry-helper"
+version = "0.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/c8/12be74c0b0715f552bc417c7a50fd4763b2f30d93cba84333a8a3601fe0f/retry_helper-0.0.4.tar.gz", hash = "sha256:8d76c1fcff4719e0916f452fc30f9828a98c64150904a5fafd6a2a37a7190d3b", size = 3411, upload-time = "2020-11-23T09:20:01.489Z" }
 
 [[package]]
 name = "rich"

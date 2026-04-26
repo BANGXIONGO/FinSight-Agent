@@ -9,11 +9,7 @@
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。  
 
 
-# -*- coding: utf-8 -*-
-# @Author  : relakkes@gmail.com
-# @Name    : 程序员阿江-Relakkes
-# @Time    : 2024/6/2 10:35
-# @Desc    :
+
 
 import time
 import unittest

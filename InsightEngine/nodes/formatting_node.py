@@ -10,7 +10,6 @@ from loguru import logger
 from .base_node import BaseNode
 from ..prompts import SYSTEM_PROMPT_REPORT_FORMATTING
 from ..utils.text_processing import (
-    remove_reasoning_from_output,
     clean_markdown_tags
 )
 
@@ -96,24 +95,27 @@ class ReportFormattingNode(BaseNode):
         Returns:
             清理后的Markdown报告
         """
-        try:
-            # 清理响应文本
-            cleaned_output = remove_reasoning_from_output(output)
-            cleaned_output = clean_markdown_tags(cleaned_output)
-            
-            # 确保报告有基本结构
-            if not cleaned_output.strip():
-                return "# 报告生成失败\n\n无法生成有效的报告内容。"
-            
-            # 如果没有标题，添加一个默认标题
-            if not cleaned_output.strip().startswith('#'):
-                cleaned_output = "# 深度研究报告\n\n" + cleaned_output
-            
-            return cleaned_output.strip()
-            
-        except Exception as e:
-            logger.exception(f"处理输出失败: {str(e)}")
-            return "# 报告处理失败\n\n报告格式化过程中发生错误。"
+        cleaned_output = clean_markdown_tags(output).strip()
+
+        # 严格模式：不做兜底改写，任何不符合要求的输出都直接失败
+        if not cleaned_output:
+            raise ValueError("LLM未返回有效报告内容")
+        if not cleaned_output.startswith("#"):
+            raise ValueError("LLM输出不符合Markdown报告格式：缺少一级标题")
+
+        required_sections = [
+            "## 执行摘要",
+            "## 一、舆情事实与时间线",
+            "## 二、情绪结构与争议焦点",
+            "## 三、经济影响传导分析",
+            "## 四、风险评估与情景推演",
+            "## 五、行动建议",
+        ]
+        missing_sections = [section for section in required_sections if section not in cleaned_output]
+        if missing_sections:
+            raise ValueError(f"LLM输出不符合prompts.py限定格式，缺少章节: {missing_sections}")
+
+        return cleaned_output
     
     def format_report_manually(self, paragraphs_data: List[Dict[str, str]], 
                              report_title: str = "深度研究报告") -> str:
